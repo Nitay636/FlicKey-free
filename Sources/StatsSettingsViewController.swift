@@ -11,9 +11,6 @@ final class StatsSettingsViewController: NSViewController {
 
     private let bigLabel = NSTextField(labelWithString: "0")
     private var valueLabels: [SwitchKind: NSTextField] = [:]
-    private let nagCheckbox = NSButton(
-        checkboxWithTitle: "Don't show milestone popups (\"FlicKey helped you N times\")",
-        target: nil, action: nil)
     private var statsToken: NSObjectProtocol?
 
     override func loadView() {
@@ -43,16 +40,12 @@ final class StatsSettingsViewController: NSViewController {
         }
         let card = settingsCard(rows)
 
-        nagCheckbox.target = self
-        nagCheckbox.action = #selector(toggleNag)
-        nagCheckbox.setAccessibilityIdentifier("disableStatsNags")
-
         let foot = settingsFootnote(
             "Counts auto-fixes, on-demand conversions (double-tap Shift), and per-app, "
             + "per-website and per-chat switches. All local; nothing is sent.")
 
         let stack = NSStackView(views: [header, bigLabel, caption, spacer(8), card,
-                                        spacer(6), nagCheckbox, spacer(2), foot])
+                                        spacer(6), foot])
         installSettingsPane(stack, cards: [card])
 
         statsToken = NotificationCenter.default.addObserver(
@@ -76,11 +69,6 @@ final class StatsSettingsViewController: NSViewController {
         for (kind, label) in valueLabels {
             label.stringValue = SwitchStats.count(kind).formatted()
         }
-        nagCheckbox.state = StatsNagController.isDisabled ? .on : .off
-    }
-
-    @objc private func toggleNag() {
-        StatsNagController.isDisabled = nagCheckbox.state == .on
     }
 
     private func roundedBold(_ size: CGFloat) -> NSFont {

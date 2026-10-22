@@ -5,7 +5,7 @@ Three layers. Together they cover every aspect; each layer tests what it *can*.
 | Layer | Command | Covers | Touches your Mac? |
 |-------|---------|--------|-------------------|
 | **Unit / replay** | `xcodebuild test -scheme FlicKey` (or just run in Xcode) | All the *logic*: layout conversion, per-site/per-conversation/per-app decisions, routing, parsing (incl. real captured Teams/browser traces), persistence, version compare, shortcut building, **focus-watcher gating (`FocusGate`), panel dismiss-restore (`PanelSession`), app-name matching (`AppRules.normalizedName`/`forcedSourceID`)** | No — headless, deterministic |
-| **UI** | `scripts/run-ui-tests.sh` | The **Settings window** (all 4 tabs incl. Support/trial) + Apps add/remove + shortcut recorder & presets + menu-bar menu | Yes — controls the screen ~2 min |
+| **UI** | `scripts/run-ui-tests.sh` | The **Settings window** (all tabs incl. About) + Apps add/remove + shortcut recorder & presets + menu-bar menu | Yes — controls the screen ~2 min |
 | **Manual smoke** | this checklist | The **permission-gated functional flows** that can't be automated reliably (need granted Accessibility/Automation + real apps, and the global hotkey can't be double-registered) | Yes — you do it by hand |
 
 ### Run just one component
@@ -20,7 +20,7 @@ scripts/test.sh conversion   # wrong-layout fix logic (headless)
 scripts/test.sh routing      # app routing + rules (headless)
 scripts/test.sh apps         # app rules + Apps-tab add/remove UI      (controls screen)
 scripts/test.sh shortcut     # shortcut logic + recorder UI            (controls screen)
-scripts/test.sh support      # trial/license logic + Support-tab UI    (controls screen)
+scripts/test.sh about        # About-tab UI    (controls screen)
 scripts/test.sh menubar      # status-item menu UI                     (controls screen)
 scripts/test.sh settings     # Settings window UI                       (controls screen)
 scripts/test.sh ui|unit|all  # whole UI scheme / all unit / everything

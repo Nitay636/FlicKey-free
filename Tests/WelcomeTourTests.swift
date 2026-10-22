@@ -2,18 +2,15 @@ import XCTest
 
 // The welcome tour gate: fresh installs only, once.
 final class WelcomeTourTests: XCTestCase {
-    private let window = WelcomeTour.freshInstallWindow
-
     func testFreshInstallShows() {
-        XCTAssertTrue(WelcomeTour.shouldShow(firstRun: 1000, now: 1000, seen: false))
-        XCTAssertTrue(WelcomeTour.shouldShow(firstRun: 1000, now: 1000 + window - 1, seen: false))
+        XCTAssertTrue(WelcomeTour.shouldShow(isFreshInstall: true, seen: false))
     }
 
     func testExistingUserNeverSees() {
-        XCTAssertFalse(WelcomeTour.shouldShow(firstRun: 1000, now: 1000 + window + 1, seen: false))
+        XCTAssertFalse(WelcomeTour.shouldShow(isFreshInstall: false, seen: false))
     }
 
     func testSeenNeverRepeats() {
-        XCTAssertFalse(WelcomeTour.shouldShow(firstRun: 1000, now: 1000, seen: true))
+        XCTAssertFalse(WelcomeTour.shouldShow(isFreshInstall: true, seen: true))
     }
 }

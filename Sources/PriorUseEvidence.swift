@@ -2,7 +2,7 @@ import Foundation
 
 // Detects a surviving preferences domain from an older FlicKey installation.
 // This is intentionally pure so migration behavior can be tested without ever
-// reading or changing a customer's Keychain.
+// touching a customer's real preferences.
 enum PriorUseEvidence {
     static let markerKeys = [
         "hasCompletedFirstLaunch", "whatsNewSeenVersion", "welcomeTourSeen",

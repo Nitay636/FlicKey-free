@@ -8,7 +8,7 @@ import Foundation
 // default), never sends without the user seeing the exact words and pressing Send,
 // and prompts at most once per interval and only when there is something new.
 //
-// No Keychain, no UI, so the decision is deterministically unit-testable.
+// No storage, no UI, so the decision is deterministically unit-testable.
 enum BlockedWordsSharing {
     // At most one prompt per this window, so an opted-in user is never nagged.
     static let interval: TimeInterval = 7 * 24 * 60 * 60   // 7 days

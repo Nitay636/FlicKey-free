@@ -2,7 +2,6 @@
 
 FlicKey uses the following third-party software and techniques:
 
-- **Sparkle** (https://github.com/sparkle-project/Sparkle) - in-app updates.
   MIT License, with components under BSD-2-Clause (bsdiff, signature
   verification) and a zlib-style license (Ed25519). Fetched via Swift Package
   Manager; not vendored in this repository.

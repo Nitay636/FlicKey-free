@@ -24,11 +24,9 @@ final class WelcomeTourController: NSObject, NSWindowDelegate {
     // caller can suppress the What's New note (a new user's first version IS the
     // baseline).
     @discardableResult
-    static func showIfNeeded() -> Bool {
+    static func showIfNeeded(isFreshInstall: Bool) -> Bool {
         guard !UITestMode.isActive else { return false }
-        let firstRun = TimeInterval(TrialManager.load().firstRun)
-        guard WelcomeTour.shouldShow(firstRun: firstRun,
-                                     now: Date().timeIntervalSince1970,
+        guard WelcomeTour.shouldShow(isFreshInstall: isFreshInstall,
                                      seen: WelcomeTourStore.seen) else { return false }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { shared.present() }
         return true

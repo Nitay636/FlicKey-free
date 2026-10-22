@@ -35,7 +35,7 @@
 #   apps         app rules + the Apps-tab add/remove UI  (UI → controls screen)
 #   shortcut     shortcut building/persistence + recorder UI  (UI → controls screen)
 #   input        input source catalog/manager
-#   support      trial/license logic + the Support tab UI  (UI → controls screen)
+#   about        the About tab UI  (UI → controls screen)
 #   menubar      the status-item menu  (UI → controls screen)
 #   settings     the Settings window UI  (UI → controls screen)
 #   ui           ALL UI tests  (UI → controls screen)
@@ -139,9 +139,8 @@ case "$COMPONENT" in
     u FunctionalUITests/testBareKeyDuringRecordingIsRejected ;;
   input)
     t InputSourceTests ;;
-  support)
-    t TrialLogicTests; t LemonSqueezyTests
-    u SupportUITests ;;                # trial/license logic + Support-tab UI
+  about)
+    u AboutUITests ;;                  # About-tab UI (UI → controls screen)
   menubar)
     u MenuBarUITests ;;                # status-item menu (UI → controls screen)
   settings)

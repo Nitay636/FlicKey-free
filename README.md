@@ -1,4 +1,6 @@
-# FlicKey
+# FlicKey (trial-free private build)
+
+This is a private derivative of [FlicKey](https://github.com/alfital2/FlicKey) by Tal Alfi. The 30-day trial, license keys, purchase flow, supporter nags and in-app auto-update have been removed, so every feature is always available. The in-app updater is gone on purpose: the original feed would replace this build with the trial version. Update by rebuilding from source.
 
 FlicKey is a macOS menu bar app for people who type in more than one language. When you type into the wrong keyboard layout, it fixes the text and switches the layout for you.
 
@@ -19,7 +21,7 @@ Conversion uses the keyboard layouts enabled in macOS. For text just typed, veri
 
 ## Install
 
-Download the app from [flickey.site](https://flickey.site), drag it to Applications, and grant Accessibility access when asked. FlicKey needs Accessibility because that is the macOS mechanism for reading the text field it is fixing and for observing keystrokes. Requires macOS 13 or later.
+Build the app from source (below), drag it to Applications, and grant Accessibility access when asked. FlicKey needs Accessibility because that is the macOS mechanism for reading the text field it is fixing and for observing keystrokes. Requires macOS 13 or later.
 
 Firefox-based browsers also use macOS Accessibility to expose the selected tab's address because Gecko does not provide AppleScript tab support. If Firefox's advanced `accessibility.force_disabled` preference is set to `1`, per-site memory cannot read its tabs and quietly keeps the last known site; the rest of FlicKey continues to work.
 
@@ -49,4 +51,4 @@ Trackpad taps use a private macOS framework (the technique comes from [HapticKey
 
 ## License
 
-FlicKey is **source available** — the full source is published under the FlicKey Source License (see `LICENSE.md`), which is not an OSI-approved license. You may study it, make private builds, and create source-only forks for experimentation or contributions. You may not distribute a FlicKey-derived app, product, or service without prior written permission. Independently created software that copies no protected FlicKey code is outside the license. If FlicKey saves you time, [a one-time purchase](https://flickey.site) keeps it maintained.
+FlicKey is **source available** — the full source is published under the FlicKey Source License (see `LICENSE.md`), which is not an OSI-approved license. You may study it, make private builds, and create source-only forks for experimentation or contributions. You may not distribute a FlicKey-derived app, product, or service without prior written permission. Independently created software that copies no protected FlicKey code is outside the license.

@@ -20,7 +20,7 @@ final class SettingsWindowController: NSWindowController {
             (AppsSettingsViewController(), "Apps", "square.grid.2x2"),
             (StatsSettingsViewController(), SwitchStats.total.formatted(), "arrow.left.arrow.right"),
             (ImproveSettingsViewController(), "Improve", "ladybug"),
-            (LicenseSettingsViewController(), "Support", "heart"),
+            (AboutSettingsViewController(), "About", "info.circle"),
         ]
         for (vc, label, symbol) in specs {
             let item = NSTabViewItem(viewController: vc)
@@ -155,7 +155,6 @@ final class SettingsTabViewController: NSTabViewController {
 
 final class GeneralSettingsViewController: NSViewController {
 
-    private let uiTestAutoUpdateKey = "uiTestAutoUpdateEnabled"
 
     // Short marketing version (e.g. "0.4.5") for the footnote label.
     private var appShortVersion: String {
@@ -163,7 +162,6 @@ final class GeneralSettingsViewController: NSViewController {
     }
 
     private let launchSwitch = NSSwitch()
-    private let autoUpdateSwitch = NSSwitch()
     private let autoCorrectSwitch = NSSwitch()
     private let autoCorrectHealth = NSTextField(wrappingLabelWithString: "")
     private let openAccessibilityButton = NSButton(title: "Open Accessibility Settings…",
@@ -174,7 +172,6 @@ final class GeneralSettingsViewController: NSViewController {
     override func loadView() {
         for (toggle, action, id) in [
             (launchSwitch, #selector(toggleLaunch), "launchAtLoginSwitch"),
-            (autoUpdateSwitch, #selector(toggleAutoUpdate), "autoUpdateSwitch"),
             (autoCorrectSwitch, #selector(toggleAutoCorrect), "autoCorrectSwitch"),
         ] {
             toggle.target = self
@@ -185,11 +182,6 @@ final class GeneralSettingsViewController: NSViewController {
         iconPopup.addItems(withTitles: MenuBarIconStyle.allCases.map { $0.displayName })
         iconPopup.target = self; iconPopup.action = #selector(pickIcon)
         iconPopup.setAccessibilityIdentifier("menuBarIconPicker")
-
-        let checkNow = NSButton(title: "Check for Updates Now",
-                                target: self, action: #selector(checkNow))
-        checkNow.bezelStyle = .rounded
-        checkNow.setAccessibilityIdentifier("checkForUpdates")
 
         autoCorrectHealth.textColor = .systemOrange
         autoCorrectHealth.isHidden = true
@@ -209,7 +201,6 @@ final class GeneralSettingsViewController: NSViewController {
         let cards = [
             settingsCard([settingsRow("Launch FlicKey at login", launchSwitch)]),
             settingsCard([settingsRow("Icon", iconPopup)]),
-            settingsCard([settingsRow("Automatically check for updates", autoUpdateSwitch)]),
             settingsCard([settingsRow("Auto-switch when typing the wrong layout  (beta)", autoCorrectSwitch)]),
         ]
 
@@ -221,7 +212,7 @@ final class GeneralSettingsViewController: NSViewController {
         let stack = NSStackView(views: [
             sectionHeader("Startup"), cards[0],
             spacer(6),
-            sectionHeader("Typing"), cards[3],
+            sectionHeader("Typing"), cards[2],
             autoCorrectHealth,
             openAccessibilityButton,
             settingsFootnote("Fixes and switches the layout after you type two words in the wrong keyboard language. Undo the last fix with ⌥⌥ (double-tap Option); undo the same word twice and FlicKey stops auto-switching it."),
@@ -230,7 +221,6 @@ final class GeneralSettingsViewController: NSViewController {
             spacer(6),
             sectionHeader("Menu Bar"), cards[1],
             spacer(6),
-            sectionHeader("Updates"), cards[2], checkNow,
             spacer(10),
             settingsFootnote(versionLabel),
         ])
@@ -240,11 +230,6 @@ final class GeneralSettingsViewController: NSViewController {
     override func viewWillAppear() {
         super.viewWillAppear()
         launchSwitch.state = LaunchAtLogin.isEnabled ? .on : .off
-        let autoUpdates = UITestMode.isActive
-            ? (AppDefaults.store.object(forKey: uiTestAutoUpdateKey) == nil
-                ? true : AppDefaults.store.bool(forKey: uiTestAutoUpdateKey))
-            : Updater.shared.automaticallyChecksForUpdates
-        autoUpdateSwitch.state = autoUpdates ? .on : .off
         autoCorrectSwitch.state = AutoSwitchSettings.isEnabled ? .on : .off
         refreshAutoCorrectHealth()
         if let idx = MenuBarIconStyle.allCases.firstIndex(of: MenuBarIcon.style) {
@@ -256,15 +241,6 @@ final class GeneralSettingsViewController: NSViewController {
         let want = launchSwitch.state == .on
         if !LaunchAtLogin.setEnabled(want) {
             launchSwitch.state = LaunchAtLogin.isEnabled ? .on : .off   // revert on failure
-        }
-    }
-
-    @objc private func toggleAutoUpdate() {
-        let enabled = autoUpdateSwitch.state == .on
-        if UITestMode.isActive {
-            AppDefaults.store.set(enabled, forKey: uiTestAutoUpdateKey)
-        } else {
-            Updater.shared.automaticallyChecksForUpdates = enabled
         }
     }
 
@@ -308,11 +284,6 @@ final class GeneralSettingsViewController: NSViewController {
         let idx = iconPopup.indexOfSelectedItem
         guard MenuBarIconStyle.allCases.indices.contains(idx) else { return }
         MenuBarIcon.style = MenuBarIconStyle.allCases[idx]   // re-renders the menu-bar badge live
-    }
-
-    @objc private func checkNow() {
-        guard !UITestMode.isActive else { return }
-        Updater.shared.checkForUpdates()
     }
 }
 

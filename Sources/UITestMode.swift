@@ -5,9 +5,6 @@ import Foundation
 // behaves differently under UI tests checks HERE, so the test seam in shipping
 // code stays one named concept instead of scattered argument checks:
 //   • AppDefaults    → throwaway defaults suite (never the user's settings)
-//   • TrialManager   → .uitest Keychain item, reset at launch (fresh trial)
-//   • LicenseStore   → .uitest Keychain item (never the user's license)
-//   • NagController  → silenced
 //   • Overlay        → HUDs stay up long enough for XCUITest's ~1 Hz polling
 enum UITestMode {
     #if DEBUG
@@ -18,7 +15,7 @@ enum UITestMode {
         || arguments.contains("-uiTestPreserveState")
     static let shouldResetState = arguments.contains("-uiTestReset")
     #else
-    // Test launch arguments must never create a renewable trial in a customer build.
+    // Test launch arguments are ignored in a customer build.
     static let isActive = false
     static let shouldResetState = false
     #endif

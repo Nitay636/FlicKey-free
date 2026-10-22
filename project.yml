@@ -16,11 +16,6 @@ settings:
     PROVISIONING_PROFILE_SPECIFIER: ""
     ENABLE_HARDENED_RUNTIME: YES
 
-packages:
-  Sparkle:
-    url: https://github.com/sparkle-project/Sparkle
-    from: "2.6.0"
-
 targets:
   FlicKey:
     type: application
@@ -39,20 +34,17 @@ targets:
       - path: Resources/click-ping.wav
       - path: Resources/click-bubble.wav
       - path: Resources/click-keyboard.wav
-    dependencies:
-      - package: Sparkle
     settings:
       base:
         INFOPLIST_FILE: Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: FlicKey.entitlements
         PRODUCT_BUNDLE_IDENTIFIER: com.talalfi.FlicKey
-        MARKETING_VERSION: "0.6.0"
-        CURRENT_PROJECT_VERSION: "78"
+        MARKETING_VERSION: "0.7.0"
+        CURRENT_PROJECT_VERSION: "79"
         ENABLE_HARDENED_RUNTIME: YES
       configs:
-        # Keep developer-only diagnostics and explicit entitlement simulation
-        # arguments available in Debug. Ordinary Debug builds still enforce the
-        # same real entitlement path as Release.
+        # Keep developer-only diagnostics and UI-test arguments available in
+        # Debug only.
         Debug:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
         # Never ship code-coverage instrumentation in the distributed build.
@@ -96,7 +88,6 @@ targets:
       - path: Sources/DiagnosticHash.swift
       - path: Sources/DiagnosticRecorder.swift
       - path: Sources/DoubleTapDetector.swift
-      - path: Sources/Entitlement.swift
       - path: Sources/FocusGate.swift
       - path: Sources/InputSourceCatalog.swift
       - path: Sources/InputSourceManager.swift
@@ -105,7 +96,6 @@ targets:
       - path: Sources/LayoutCue.swift
       - path: Sources/LayoutMap.swift
       - path: Sources/KeyboardTransducer.swift
-      - path: Sources/LemonSqueezy.swift
       - path: Sources/MenuBarIcon.swift
       - path: Sources/OnScreenSpan.swift
       - path: Sources/OrthographyRules.swift
@@ -116,13 +106,9 @@ targets:
       - path: Sources/SiteMemoryStore.swift
       - path: Sources/SlackConversationProvider.swift
       - path: Sources/SoundEffect.swift
-      - path: Sources/StatsNag.swift
       - path: Sources/SwitchStats.swift
       - path: Sources/SpellChecking.swift
       - path: Sources/TeamsConversationProvider.swift
-      - path: Sources/TrialLogic.swift
-      - path: Sources/TrialRecovery.swift
-      - path: Sources/TrialReminder.swift
       - path: Sources/WelcomeTour.swift
       - path: Sources/TypedWordTracker.swift
       - path: Sources/InputHoldQueue.swift

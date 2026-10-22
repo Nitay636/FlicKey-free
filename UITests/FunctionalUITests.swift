@@ -179,7 +179,7 @@ final class FunctionalUITests: XCTestCase {
         field.typeText("ZzNoSuchAppQq\r")
 
         // Exact label match (identifier-or-label subscript), same as the proven
-        // license-overlay lookup. The app keeps overlays up longer under
+        // overlay lookup. The app keeps overlays up longer under
         // -uiTestReset so the ~1 Hz existence poll can't miss the window.
         let notice = app.staticTexts["No app named “ZzNoSuchAppQq”"]
         XCTAssertTrue(notice.waitForExistence(timeout: 6),

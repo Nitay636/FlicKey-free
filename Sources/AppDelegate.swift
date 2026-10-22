@@ -12,32 +12,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let layoutCue = LayoutCueController()
     private let autoSwitch = AutoSwitchController()
     private let accessibilityMonitor = AccessibilityTrustMonitor()
-    private let trialEnded = TrialEndedController()
     private var coreStarted = false
     private var accessibilityFeaturesRunning = false
-    private var entitlementTimer: Timer?
-    private var lastEntitlement: Entitlement?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // UI tests: redirect all settings to a throwaway store BEFORE anything
         // reads it, so tests can't read or corrupt the user's real settings.
         if UITestMode.isActive {
             AppDefaults.useIsolatedStoreForUITests(reset: UITestMode.shouldResetState)
-            // TrialManager/LicenseStore point at .uitest Keychain items in this
-            // mode; clear the trial one so every UI-test run starts
-            // deterministically with all 30 trial days left, unlicensed.
-            if UITestMode.shouldResetState { TrialManager.reset() }
         }
-        // Apply the login-item default only to a genuinely fresh install. Load
-        // the Keychain-backed first-run stamp before writing any preference: a
-        // surviving old stamp prevents a reinstall from changing the user's
-        // existing login-item choice.
-        let hadPriorPreferences = PriorUseEvidence.exists(in: AppDefaults.store)
-        let firstRun = TrialManager.load().firstRun
-        let isFreshInstall = !hadPriorPreferences && WelcomeTour.shouldShow(
-            firstRun: TimeInterval(firstRun),
-            now: Date().timeIntervalSince1970,
-            seen: false)
+        // Apply the login-item default (and show the welcome tour) only on a
+        // genuinely fresh install. Read this before writing any preference.
+        let isFreshInstall = !PriorUseEvidence.exists(in: AppDefaults.store)
         // UI tests: seed per-site memory into the (isolated) store. Value form:
         //   "domain=sourceID;domain=sourceID"
         let args = ProcessInfo.processInfo.arguments
@@ -47,9 +33,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // "no rule" premise even in an otherwise reset test store.
             RulesStore.setRememberVisitedAppsEnabled(false)
         }
-        #if DEBUG
-        Entitlement.applyDebugOverride(from: args)   // -simulateExpired etc.
-        #endif
         if UITestMode.isActive, let i = args.firstIndex(of: "-uiTestSeedSites"), i + 1 < args.count {
             for pair in args[i + 1].split(separator: ";") {
                 let kv = pair.split(separator: "=", maxSplits: 1)
@@ -97,8 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Haptic/click cue on every effective layout change (app, tab, or
-        // conversation switch — and manual ⌘Space). Cosmetic; runs regardless of
-        // entitlement (there is simply nothing to cue when switching is gated).
+        // conversation switch — and manual ⌘Space). Cosmetic.
         layoutCue.start()
 
         // Auto-correct (opt-in, default off): when two consecutive words are
@@ -107,7 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         autoSwitch.suppressCue = { [weak self] in self?.layoutCue.suppress() }
         NotificationCenter.default.addObserver(
             forName: .autoSwitchSettingChanged, object: nil, queue: .main) { [weak self] _ in
-            guard let self, self.coreStarted else { return }   // gated when trial expired
+            guard let self, self.coreStarted else { return }
             if AutoSwitchSettings.isEnabled {
                 if self.accessibilityMonitor.isTrusted { self.autoSwitch.start() }
                 else { AutoSwitchMonitorHealth.set(.unavailable(.accessibilityDenied)) }
@@ -120,8 +102,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // TabMemory (per-website memory); apps with a conversation provider
         // (e.g. Teams) are handed to AppConversationMemory (per-conversation
         // memory). The two controllers are mutually exclusive: each activation
-        // path releases the other so only one is ever tracking. (Started later,
-        // gated by entitlement.)
+        // path releases the other so only one is ever tracking. (Started at
+        // the end of launch.)
         appWatcher.onBrowserActivated = { [weak self] app in
             self?.conversationMemory.leftApp()
             self?.tabMemory.browserActivated(app)
@@ -146,66 +128,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.appWatcher.handle(app)
         }
 
-        // In-app auto-update via Sparkle. Instantiating the updater starts it
-        // and schedules the periodic background check; when a newer signed
-        // release is available it offers to download, install, and relaunch -
-        // all in-app, no browser. Skipped under UI tests so it can't pop a
-        // dialog mid-run.
-        if !UITestMode.isActive { _ = Updater.shared }
-
-        // Entitlement gate: start the input-switching features only if the user
-        // is entitled (licensed / grandfathered / in trial). A new user whose
-        // trial has elapsed sees the trial-ended panel instead; buying re-enables
-        // everything (via the .licenseChanged observer below).
-        trialEnded.onEnterKey = { [weak self] in self?.statusBar?.presentSettingsForTesting() }
-        NotificationCenter.default.addObserver(
-            forName: .licenseChanged, object: nil, queue: .main) { [weak self] _ in
-            self?.refreshEntitlement()
-        }
-        // Persist the clock-rollback ratchet for every user (not only the nag
-        // path), so setting the clock back can never revive or freeze a trial.
-        if !UITestMode.isActive { TrialManager.persistRatchet() }
-
-        refreshEntitlement()
-        // The menu bar app can stay open past the trial deadline. Recheck while
-        // it is running so an expired trial does not keep its active monitors.
-        entitlementTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            if !UITestMode.isActive { TrialManager.persistRatchet(minimumAdvance: 3600) }
-            self?.refreshEntitlement()
-            LicenseStore.revalidateIfDue()
-        }
+        startCoreFeatures()
 
         if !UITestMode.isActive, isFreshInstall {
             _ = LaunchAtLogin.setEnabled(true)
         }
 
-        // The prior-use marker for the keychain-loss grandfather heuristic. Set
-        // strictly AFTER the entitlement decision above, so a genuinely fresh
-        // install's first load() ran with a clean defaults domain.
-        if !UITestMode.isActive { TrialManager.markLaunchCompleted() }
+        // Marks that this install has completed a launch, so a later launch
+        // (or a reinstall that keeps preferences) is not treated as fresh.
+        if !UITestMode.isActive { AppDefaults.store.set(true, forKey: "hasCompletedFirstLaunch") }
 
-        // One-time / periodic launch surfaces, for entitled users only (never on
-        // the expired paywall), strictly one per launch. Precedence: the welcome
-        // tour (fresh installs; their version IS the baseline, so it also consumes
-        // the what's new note), then a what's new note for updating users, then
-        // the blocked-words share offer.
-        if Entitlement.current().coreEnabled {
-            if WelcomeTourController.showIfNeeded() {
-                if let note = WhatsNew.current { WhatsNewStore.seenVersion = note.version }
-            } else if !WhatsNewController.showIfNeeded() {
-                BlockedWordsSharingController.runIfNeeded()
-            }
+        // One-time / periodic launch surfaces, strictly one per launch.
+        // Precedence: the welcome tour (fresh installs; their version IS the
+        // baseline, so it also consumes the what's new note), then a what's new
+        // note for updating users, then the blocked-words share offer.
+        if WelcomeTourController.showIfNeeded(isFreshInstall: isFreshInstall) {
+            if let note = WhatsNew.current { WhatsNewStore.seenVersion = note.version }
+        } else if !WhatsNewController.showIfNeeded() {
+            BlockedWordsSharingController.runIfNeeded()
         }
-
-        // Every 1000 switches, nudge non-licensed users with a friendly stat.
-        NotificationCenter.default.addObserver(
-            forName: .switchStatsChanged, object: nil, queue: .main) { _ in
-            StatsNagController.checkAndNagIfNeeded()
-        }
-
-        // If licensed, re-check with Lemon Squeezy occasionally (throttled,
-        // background, offline-tolerant) to honor refunds/revocations.
-        LicenseStore.revalidateIfDue()
 
         // UI-test hook: open Settings on launch so the XCUITest suite doesn't
         // depend on clicking the (flaky to automate) menu-bar status item.
@@ -214,24 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    // Start the gated features when entitled (once), or show the trial-ended
-    // panel. Called at launch and whenever the license state changes.
-    private func refreshEntitlement() {
-        let entitlement = Entitlement.current()
-        let previous = lastEntitlement
-        let wasExpired = previous == .expired
-        lastEntitlement = entitlement
-        if entitlement.coreEnabled {
-            trialEnded.dismiss()
-            startCoreFeatures()
-            if previous != entitlement { runRemindersIfNeeded(for: entitlement) }
-        } else {
-            stopCoreFeatures()
-            if !wasExpired { trialEnded.present() }
-        }
-    }
-
-    // The input-switching features (the paid value). Idempotent via coreStarted.
+    // The input-switching features. Idempotent via coreStarted.
     private func startCoreFeatures() {
         guard !coreStarted else { return }
         coreStarted = true
@@ -240,18 +164,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         conversationMemory.start()
         appWatcher.start()
         refreshAccessibilityFeatures()
-    }
-
-    private func stopCoreFeatures() {
-        guard coreStarted else { return }
-        coreStarted = false
-        autoSwitch.stop()
-        hotkeyManager.stop()
-        focusWatcher.stop()
-        accessibilityFeaturesRunning = false
-        appWatcher.stop()
-        tabMemory.stop()
-        conversationMemory.stop()
     }
 
     private func accessibilityTrustChanged(_ trusted: Bool) {
@@ -285,22 +197,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if AutoSwitchSettings.isEnabled {
                 AutoSwitchMonitorHealth.set(.unavailable(.accessibilityDenied))
             }
-        }
-    }
-
-    // Gentle, never-blocking reminders, tailored to who the user is:
-    //  - grandfathered: the WinRAR-style supporter nag they have always had.
-    //  - trial (new user): escalating end-of-trial reminders on the last days.
-    //  - licensed / expired: nothing here (expiry is handled by the trial-ended
-    //    panel, and licensed users are never prompted). Skipped in UI tests.
-    private func runRemindersIfNeeded(for entitlement: Entitlement) {
-        switch entitlement {
-        case .grandfathered:
-            NagController.runIfNeeded()
-        case .trial(let daysLeft):
-            TrialReminderController.runIfNeeded(daysLeft: daysLeft)
-        case .licensed, .expired:
-            break
         }
     }
 

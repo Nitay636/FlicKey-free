@@ -30,7 +30,7 @@ final class SettingsUITests: XCTestCase {
         XCTAssertTrue(app.tab("Apps").exists, "Apps tab should exist")
         XCTAssertTrue(app.tab("0").exists, "fresh stats tab should show total 0")
         XCTAssertTrue(app.tab("Improve").exists, "Improve tab should exist")
-        XCTAssertTrue(app.tab("Support").exists, "Support tab should exist")
+        XCTAssertTrue(app.tab("About").exists, "About tab should exist")
     }
 
     // Find a control by accessibility identifier regardless of whether AppKit
@@ -39,10 +39,9 @@ final class SettingsUITests: XCTestCase {
         app.descendants(matching: .any).matching(identifier: id).firstMatch
     }
 
-    func testGeneralTabHasStartupAndUpdateControls() {
-        step("General tab — check Launch-at-login + update controls")
+    func testGeneralTabHasStartupControls() {
+        step("General tab — check Launch-at-login controls")
         XCTAssertTrue(control("launchAtLoginSwitch").waitForExistence(timeout: 10))
-        XCTAssertTrue(control("autoUpdateSwitch").exists)
         XCTAssertTrue(control("autoCorrectSwitch").exists)
         XCTAssertTrue(app.popUpButtons["menuBarIconPicker"].exists)
         XCTAssertTrue(app.buttons["manageBlockedWords"].exists)
@@ -166,27 +165,12 @@ final class SettingsUITests: XCTestCase {
         XCTAssertTrue(app.textFields["Add app by name…"].exists)
     }
 
-    func testToggleAutoUpdatePersistsVisually() {
-        step("Toggle the 'auto-update' switch — expect it to flip")
-        let toggle = control("autoUpdateSwitch")
-        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
-        let before = toggle.value as? Int
-        toggle.click()
-        let after = toggle.value as? Int
-        XCTAssertNotEqual(before, after, "toggling should flip the switch state")
-        toggle.click()   // restore
-    }
-
     func testImportantPreferencesPersistAcrossRelaunch() {
-        step("Set auto-switch, auto-update, and a menu-bar icon style")
+        step("Set auto-switch and a menu-bar icon style")
         let autoSwitch = control("autoCorrectSwitch")
         XCTAssertTrue(autoSwitch.waitForExistence(timeout: 10))
         XCTAssertEqual(autoSwitch.value as? Int, 0)
         autoSwitch.click()
-
-        let autoUpdate = control("autoUpdateSwitch")
-        XCTAssertEqual(autoUpdate.value as? Int, 1)
-        autoUpdate.click()
 
         let icon = app.popUpButtons["menuBarIconPicker"]
         XCTAssertTrue(icon.exists)
@@ -199,17 +183,14 @@ final class SettingsUITests: XCTestCase {
         app.launch()
         XCTAssertEqual(control("autoCorrectSwitch").value as? Int, 1,
                        "auto-switch setting should survive relaunch")
-        XCTAssertEqual(control("autoUpdateSwitch").value as? Int, 0,
-                       "auto-update setting should survive relaunch")
         XCTAssertEqual(app.popUpButtons["menuBarIconPicker"].value as? String, "Monochrome",
                        "menu-bar icon style should survive relaunch")
     }
 
     func testStatsAndImproveTabsExposeWorkingControls() {
-        step("Stats — fresh isolated total and milestone preference")
+        step("Stats — fresh isolated total")
         app.tab("0").click()
         XCTAssertEqual(app.staticTexts["switchStatsTotal"].value as? String, "0")
-        XCTAssertTrue(control("disableStatsNags").exists)
 
         step("Improve — diagnostics opt-in gates bug reporting")
         app.tab("Improve").click()

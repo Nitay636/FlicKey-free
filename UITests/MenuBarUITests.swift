@@ -13,7 +13,7 @@ final class MenuBarUITests: XCTestCase {
         forceLatinInputSource()
         app = XCUIApplication()
         // No -uiTestOpenSettings: these tests exercise the menu-bar entry point
-        // itself. -uiTestReset still isolates all settings + trial state.
+        // itself. -uiTestReset still isolates all settings.
         app.launchArguments = ["-uiTestReset"]
         app.launch()
     }

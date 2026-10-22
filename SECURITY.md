@@ -14,6 +14,3 @@ Things I care about most:
 
 - Anything that lets another process read what FlicKey observes (typed text, the internal buffer).
 - Anything that abuses FlicKey's Accessibility grant to act on other apps.
-- Tampering with the update channel (Sparkle appcast or update signatures).
-
-Trial or license circumvention on your own machine is not a security issue. The source is public and the licensing is client-side by design; see `LICENSE.md` for what the license does and does not allow.

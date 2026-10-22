@@ -64,7 +64,7 @@ final class TypingBuffer {
         guard monitor == nil else { return }
         // Global monitor: keystrokes in OTHER apps. Global monitors deliberately do
         // NOT receive events sent to our own app, so ⇧⇧ conversion wouldn't work in
-        // FlicKey's own text fields (Settings search, license key). A LOCAL monitor
+        // FlicKey's own text fields (Settings search). A LOCAL monitor
         // covers those; pass the event through unchanged so the field still gets it.
         monitor = NSEvent.addGlobalMonitorForEvents(matching: Self.watched) {
             [weak self] event in self?.handle(event)

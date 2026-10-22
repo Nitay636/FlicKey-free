@@ -1,59 +1,8 @@
 import XCTest
 
-// Seeded soaks of the two persistent state machines: the entitlement decision
-// (paywall) and the learned-exceptions store. Both are places where a subtle
+// Seeded soak of the persistent learned-exceptions store, a place where a subtle
 // state bug would be near-impossible to notice by hand but costly in the field.
 final class StateSoakTests: XCTestCase {
-
-    // MARK: - Entitlement: monotonic, licensed-wins, grandfather-stable.
-
-    func testEntitlementMonotonicitySoak() {
-        let day = 24 * 60 * 60
-        Soak.run("entitlement") { rng, _ in
-            let cutoff = 1_000_000
-            let firstRun = cutoff + rng.int(-3 * day..<3 * day)   // straddle the cutoff
-            let isLicensed = rng.chance(4)
-
-            // Sweep time forward with a ratcheting maxElapsed, exactly as the app
-            // does, and assert the entitlement only ever moves in the allowed
-            // direction (never regenerates trial days, never revives once expired).
-            var maxElapsed = 0
-            var now = firstRun
-            var prevDaysLeft = Int.max
-            var everExpired = false
-
-            for _ in 0..<200 {
-                now += rng.int(0..<2 * day)
-                maxElapsed = max(maxElapsed, now - firstRun)
-                let state = Entitlement.decide(
-                    trial: TrialState(firstRun: firstRun, maxElapsed: maxElapsed, lastNag: 0),
-                    now: now, isLicensed: isLicensed, cutoff: cutoff)
-
-                if isLicensed && state != .licensed {
-                    return "licensed user resolved to \(state)"
-                }
-                if !isLicensed && firstRun < cutoff && state != .grandfathered {
-                    return "pre-cutoff user not grandfathered: \(state)"
-                }
-                if state.coreEnabled != (state != .expired) {
-                    return "coreEnabled inconsistent for \(state)"
-                }
-                if case .trial(let daysLeft) = state {
-                    if daysLeft > prevDaysLeft {
-                        return "trial days went UP: \(prevDaysLeft) → \(daysLeft)"
-                    }
-                    if daysLeft < 1 || daysLeft > 30 { return "trial daysLeft out of range: \(daysLeft)" }
-                    prevDaysLeft = daysLeft
-                }
-                if state == .expired { everExpired = true }
-                // Once expired (and unlicensed), advancing time can never revive.
-                if everExpired && !isLicensed && state != .expired && state != .grandfathered {
-                    return "revived after expiry: \(state)"
-                }
-            }
-            return nil
-        }
-    }
 
     // MARK: - AutoSwitchExceptions: block only after threshold, acceptance resets,
     // cap bounds the store — differential against a reference count map.

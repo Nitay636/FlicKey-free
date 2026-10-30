@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FlicKey.Core/FlicKey.Core.csproj" />
+    <Project Path="src/FlicKey.Windows/FlicKey.Windows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FlicKey.Core.Tests/FlicKey.Core.Tests.csproj" />
+  </Folder>
+</Solution>
